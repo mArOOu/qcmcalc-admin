@@ -15,9 +15,9 @@ const handleAddExam = async (exam: any) => {
   try {
     const examRef = doc(db, "exams", exam.id);
     await setDoc(examRef, exam);
-    alert("✅ Exam added!");
+    alert("✅ Controle Ajouté");
   } catch (error) {
-    console.error("❌ Error adding exam:", error);
+    console.error("❌ Erreur", error);
   }
 };
 
@@ -95,14 +95,16 @@ export default function AdminDashboard() {
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
         {/* Basic Information Section */}
         <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
-          <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Informations du Controle
+          </h2>
 
           <div className="space-y-4">
             <input
               name="name"
               value={exam.name}
               onChange={handleChange}
-              placeholder="Exam Name"
+              placeholder="Nom du Controle"
               className="w-full p-3 rounded-md border border-border bg-background text-foreground"
               required
             />
@@ -120,60 +122,44 @@ export default function AdminDashboard() {
               name="subject"
               value={exam.subject}
               onChange={handleChange}
-              placeholder="Subject"
+              placeholder="Module"
               className="w-full p-3 rounded-md border border-border bg-background text-foreground"
               required
             />
+            <select
+              name="speciality"
+              value={exam.speciality}
+              onChange={handleChange}
+              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+              required>
+              <option value="Médecine">Médecine</option>
+              <option value="Pharmacie">Pharmacie</option>
+              <option value="Chirurgie Dentaire">Chirurgie Dentaire</option>
+            </select>
+            <select
+              name="grade"
+              value={exam.grade}
+              onChange={handleChange}
+              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+              required>
+              <option value="1ère année">1ère Année</option>
+              <option value="2ème Année">2ème Année</option>
+              <option value="3ème Année">3ème Année</option>
+              <option value="4ème Année">4ème Année</option>
+              <option value="5ème Année">5ème Année</option>
+              <option value="6ème Année">6ème Année</option>
+            </select>
+            <select
+              name="year"
+              value={exam.year}
+              onChange={handleChange}
+              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+              required>
+              <option value="2025">2025</option>
+            </select>
+            <NumberOfQuestions onChange={handleNumQuestionsChange} />
+            <TypeOfCorrection onChange={handleTestTypeChange} />
           </div>
-        </div>
-
-        {/* Course Information Section */}
-        <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
-          <h2 className="text-xl font-semibold mb-4">Course Information</h2>
-
-          <select
-            name="speciality"
-            value={exam.speciality}
-            onChange={handleChange}
-            className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-            required>
-            <option value="">Select Speciality</option>
-            <option value="medecine">Médecine</option>
-            <option value="pharmacie">Pharmacie</option>
-            <option value="chirdent">Chirurgie Dentaire</option>
-          </select>
-
-          <select
-            name="grade"
-            value={exam.grade}
-            onChange={handleChange}
-            className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-            required>
-            <option value="">Select Grade</option>
-            <option value="1ere">1ère Année</option>
-            <option value="2eme">2ème Année</option>
-            <option value="3eme">3ème Année</option>
-            <option value="4eme">4ème Année</option>
-            <option value="5eme">5ème Année</option>
-            <option value="6eme">6ème Année</option>
-          </select>
-
-          <select
-            name="year"
-            value={exam.year}
-            onChange={handleChange}
-            className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-            required>
-            <option value="2025">2025</option>
-          </select>
-        </div>
-
-        {/* Exam Setup Section */}
-        <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
-          <h2 className="text-xl font-semibold mb-4">Exam Setup</h2>
-
-          <NumberOfQuestions onChange={handleNumQuestionsChange} />
-          <TypeOfCorrection onChange={handleTestTypeChange} />
         </div>
 
         {/* Answer Input Section */}
@@ -188,8 +174,8 @@ export default function AdminDashboard() {
         <div className="flex justify-center pt-6">
           <button
             type="submit"
-            className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity">
-            Add Exam
+            className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity hover:cursor-pointer">
+            Ajouter Le controle
           </button>
         </div>
       </form>

@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomButton from "./CustomButton";
 
 //Props and state
 interface CalculatorProps {
   numQuestions: number;
   testType: string;
+  onAnswersChange?: (answers: Record<number, string[]>) => void;
 }
 
 export default function Calculator({
   numQuestions,
   testType,
+  onAnswersChange,
 }: CalculatorProps) {
   const [correctAnswers, setCorrectAnswers] = useState<
     Record<number, string[]>
@@ -23,6 +25,12 @@ export default function Calculator({
     countedQuestions: number;
   } | null>(null);
 
+  useEffect(() => {
+    if (onAnswersChange) {
+      onAnswersChange(correctAnswers);
+    }
+  }, [correctAnswers, onAnswersChange]);
+
   //Checkbox Handler
   const handleCheckboxChange = (
     questionNumber: number,
@@ -33,15 +41,17 @@ export default function Calculator({
       setCorrectAnswers((prev) => {
         const current = prev[questionNumber] || [];
         if (current.includes(letter)) {
-          return {
+          const newAnswers = {
             ...prev,
             [questionNumber]: current.filter((item) => item !== letter),
           };
+          return newAnswers;
         } else {
-          return {
+          const newAnswers = {
             ...prev,
-            [questionNumber]: [...current, letter],
+            [questionNumber]: [...current, letter].sort(),
           };
+          return newAnswers;
         }
       });
     } else {

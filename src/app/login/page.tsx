@@ -1,3 +1,4 @@
+"use client";
 import LogIn from "@/components/Login";
 import React from "react";
 

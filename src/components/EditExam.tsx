@@ -24,9 +24,9 @@ interface ExamData {
   numQuestions: string;
   testType: string;
   correctAnswers: Record<number, string[]>;
-  session: "normal" | "rattrapage";
+  session: "Normal" | "Rattrapage";
   rotation: string;
-  type: "clinique" | "theorique";
+  type: "Clinique" | "Théorique";
 }
 
 const getAllExamIDs = async () => {
@@ -253,8 +253,8 @@ export default function EditExam() {
                 onChange={handleChange}
                 className="w-full p-3 rounded-md border border-border bg-background text-foreground"
                 required>
-                <option value="normal">Session Normale</option>
-                <option value="ratrapage">Session de Ratrapage</option>
+                <option value="Normal">Session Normale</option>
+                <option value="Rattrapage">Session de Rattrapage</option>
               </select>
 
               <input
@@ -272,8 +272,8 @@ export default function EditExam() {
                 onChange={handleChange}
                 className="w-full p-3 rounded-md border border-border bg-background text-foreground"
                 required>
-                <option value="theorique">Théorique</option>
-                <option value="clinique">Clinique</option>
+                <option value="Théorique">Théorique</option>
+                <option value="Clinique">Clinique</option>
               </select>
             </div>
 

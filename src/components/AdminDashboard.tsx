@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     correctAnswers: {} as Record<number, string[]>,
     session: "Normal" as "Normal" | "Rattrapage",
     rotation: "",
-    type: "Theorique" as "Clinique" | "Théorique",
+    type: "Théorique" as "Clinique" | "Théorique",
   });
   const router = useRouter();
 

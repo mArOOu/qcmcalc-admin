@@ -24,6 +24,9 @@ interface ExamData {
   numQuestions: string;
   testType: string;
   correctAnswers: Record<number, string[]>;
+  session: "normal" | "rattrapage";
+  rotation: string;
+  type: "clinique" | "theorique";
 }
 
 const getAllExamIDs = async () => {
@@ -119,6 +122,30 @@ export default function EditExam() {
     try {
       setIsSaving(true);
       const examRef = doc(db, "exams", selectedExam);
+
+      // Validate required fields
+      const requiredFields = [
+        "name",
+        "description",
+        "subject",
+        "speciality",
+        "grade",
+        "year",
+        "session",
+        "rotation",
+        "type",
+        "numQuestions",
+        "testType",
+      ] as const;
+
+      const missingFields = requiredFields.filter((field) => !examData[field]);
+      if (missingFields.length > 0) {
+        alert(
+          `Please fill in all required fields: ${missingFields.join(", ")}`
+        );
+        return;
+      }
+
       // Convert ExamData to a plain object for Firestore
       const { id, ...examDataForUpdate } = examData;
       await updateDoc(examRef, examDataForUpdate);
@@ -152,6 +179,7 @@ export default function EditExam() {
 
         {examData && (
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information Section */}
             <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
               <h3 className="text-xl font-semibold mb-4">Basic Information</h3>
               <input
@@ -180,6 +208,7 @@ export default function EditExam() {
               />
             </div>
 
+            {/* Course Information Section */}
             <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
               <h3 className="text-xl font-semibold mb-4">Course Information</h3>
               <select
@@ -217,14 +246,45 @@ export default function EditExam() {
                 required>
                 <option value="2025">2025</option>
               </select>
+
+              <select
+                name="session"
+                value={examData.session}
+                onChange={handleChange}
+                className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+                required>
+                <option value="normal">Session Normale</option>
+                <option value="ratrapage">Session de Ratrapage</option>
+              </select>
+
+              <input
+                name="rotation"
+                value={examData.rotation}
+                onChange={handleChange}
+                placeholder="Rotation"
+                className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+                required
+              />
+
+              <select
+                name="type"
+                value={examData.type}
+                onChange={handleChange}
+                className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+                required>
+                <option value="theorique">Théorique</option>
+                <option value="clinique">Clinique</option>
+              </select>
             </div>
 
+            {/* Exam Setup Section */}
             <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
               <h3 className="text-xl font-semibold mb-4">Exam Setup</h3>
               <NumberOfQuestions onChange={handleNumQuestionsChange} />
               <TypeOfCorrection onChange={handleTestTypeChange} />
             </div>
 
+            {/* Answer Input Section */}
             <div className="bg-card p-6 rounded-lg shadow-lg">
               <Calculator
                 numQuestions={Number(examData.numQuestions)}

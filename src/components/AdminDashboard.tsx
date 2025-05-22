@@ -34,6 +34,9 @@ export default function AdminDashboard() {
     numQuestions: "",
     testType: "QCSs",
     correctAnswers: {} as Record<number, string[]>,
+    session: "Normal" as "Normal" | "Rattrapage",
+    rotation: "",
+    type: "Theorique" as "Clinique" | "Théorique",
   });
   const router = useRouter();
 
@@ -108,7 +111,6 @@ export default function AdminDashboard() {
               className="w-full p-3 rounded-md border border-border bg-background text-foreground"
               required
             />
-
             <textarea
               name="description"
               value={exam.description}
@@ -117,7 +119,6 @@ export default function AdminDashboard() {
               className="w-full p-3 rounded-md border border-border bg-background text-foreground min-h-[100px]"
               required
             />
-
             <input
               name="subject"
               value={exam.subject}
@@ -143,12 +144,12 @@ export default function AdminDashboard() {
               className="w-full p-3 rounded-md border border-border bg-background text-foreground"
               required>
               <option value="1ère année">1ère Année</option>
-              <option value="2ème Année">2ème Année</option>
-              <option value="3ème Année">3ème Année</option>
-              <option value="4ème Année">4ème Année</option>
-              <option value="5ème Année">5ème Année</option>
-              <option value="6ème Année">6ème Année</option>
-            </select>
+              <option value="2ème année">2ème Année</option>
+              <option value="3ème année">3ème Année</option>
+              <option value="4ème année">4ème Année</option>
+              <option value="5ème année">5ème Année</option>
+              <option value="6ème année">6ème Année</option>
+            </select>{" "}
             <select
               name="year"
               value={exam.year}
@@ -156,6 +157,32 @@ export default function AdminDashboard() {
               className="w-full p-3 rounded-md border border-border bg-background text-foreground"
               required>
               <option value="2025">2025</option>
+            </select>
+            <select
+              name="session"
+              value={exam.session}
+              onChange={handleChange}
+              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+              required>
+              <option value="Normal">Session Normale</option>
+              <option value="Rattrapage">Session de Rattrapage</option>
+            </select>
+            <input
+              name="rotation"
+              value={exam.rotation}
+              onChange={handleChange}
+              placeholder="Rotation"
+              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+              required
+            />
+            <select
+              name="type"
+              value={exam.type}
+              onChange={handleChange}
+              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
+              required>
+              <option value="Théorique">Théorique</option>
+              <option value="Clinique">Clinique</option>
             </select>
             <NumberOfQuestions onChange={handleNumQuestionsChange} />
             <TypeOfCorrection onChange={handleTestTypeChange} />

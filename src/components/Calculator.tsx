@@ -24,9 +24,9 @@ export default function Calculator({
     grade: number;
     countedQuestions: number;
   } | null>(null);
-
   useEffect(() => {
-    if (onAnswersChange) {
+    // Only call onAnswersChange if it exists and we have answers to send
+    if (onAnswersChange && Object.keys(correctAnswers).length > 0) {
       onAnswersChange(correctAnswers);
     }
   }, [correctAnswers, onAnswersChange]);

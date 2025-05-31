@@ -1,14 +1,28 @@
 "use client";
 
 import { db } from "../lib/firebase";
-import { collection, setDoc, doc } from "firebase/firestore";
+import { setDoc, doc } from "firebase/firestore";
 import exams from "../../public/data/exams.json";
 
-function flattenCorrectAnswers(correctAnswers: any) {
-  const flatAnswers: Record<string, any> = {};
+interface ExamAnswer {
+  [key: string]: string[] | string[][] | undefined;
+}
+
+interface ExamData {
+  id: string;
+  name: string;
+  correctAnswers: ExamAnswer;
+  [key: string]: unknown;
+}
+
+function flattenCorrectAnswers(correctAnswers: ExamAnswer): ExamAnswer {
+  const flatAnswers: ExamAnswer = {};
   for (const key in correctAnswers) {
-    // If it's an array of arrays, flatten the first level
-    flatAnswers[key] = correctAnswers[key].flat();
+    const value = correctAnswers[key];
+    if (Array.isArray(value)) {
+      // Only flatten if value is an array (string[] or string[][])
+      flatAnswers[key] = (value as string[][]).flat();
+    }
   }
   return flatAnswers;
 }

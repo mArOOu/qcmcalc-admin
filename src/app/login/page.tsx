@@ -20,13 +20,18 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin");
-    } catch (error: any) {
-      setError(
-        error.code === "auth/wrong-password" ||
-          error.code === "auth/user-not-found"
-          ? "Invalid email or password"
-          : "An error occurred during login"
-      );
+    } catch (error) {
+      if (error instanceof Error) {
+        const firebaseError = error as { code?: string };
+        setError(
+          firebaseError.code === "auth/wrong-password" ||
+            firebaseError.code === "auth/user-not-found"
+            ? "Invalid email or password"
+            : "An error occurred during login"
+        );
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
     }

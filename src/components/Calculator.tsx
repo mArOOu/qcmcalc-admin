@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import CustomButton from "./CustomButton";
 
 //Props and state
 interface CalculatorProps {
@@ -12,18 +11,13 @@ interface CalculatorProps {
 
 export default function Calculator({
   numQuestions,
-  testType,
   onAnswersChange,
 }: CalculatorProps) {
   const [correctAnswers, setCorrectAnswers] = useState<
     Record<number, string[]>
   >({});
   const [userAnswers, setUserAnswers] = useState<Record<number, string[]>>({});
-  const [result, setResult] = useState<{
-    totalScore: number;
-    grade: number;
-    countedQuestions: number;
-  } | null>(null);
+
   useEffect(() => {
     // Only call onAnswersChange if it exists and we have answers to send
     if (onAnswersChange && Object.keys(correctAnswers).length > 0) {

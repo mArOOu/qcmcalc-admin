@@ -3,8 +3,6 @@ import HITlogo from "./HITLogo";
 import { lazy } from "react";
 import Link from "next/link";
 
-const MarkdownPreview = lazy(() => import("./HITLogo"));
-
 export default function NavigationBar() {
   return (
     <div className="w-full bg-dark/5 border-b-1 border-solid lborder-light-800 backdrop-blur-md">

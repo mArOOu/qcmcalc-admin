@@ -147,7 +147,7 @@ export default function EditExam() {
       }
 
       // Convert ExamData to a plain object for Firestore
-      const { id, ...examDataForUpdate } = examData;
+      const { id: _, ...examDataForUpdate } = examData;
       await updateDoc(examRef, examDataForUpdate);
       alert("✅ Exam updated successfully!");
     } catch (error) {

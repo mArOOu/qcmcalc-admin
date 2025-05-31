@@ -1,6 +1,6 @@
 import React from "react";
 
-let HITlogo = () => {
+const HITlogo = () => {
   return (
     <div
       className="

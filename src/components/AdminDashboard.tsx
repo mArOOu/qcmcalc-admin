@@ -11,7 +11,23 @@ import { v4 as uuidv4 } from "uuid";
 import NumberOfQuestions from "./NumberOfQuestions";
 import TypeOfCorrection from "./TypeOfCorrection";
 
-const handleAddExam = async (exam: any) => {
+interface ExamData {
+  id: string;
+  name: string;
+  description: string;
+  speciality: string;
+  grade: string;
+  year: string;
+  subject: string;
+  numQuestions: string;
+  testType: string;
+  correctAnswers: Record<number, string[]>;
+  session: "Normal" | "Rattrapage";
+  rotation: string;
+  type: "Clinique" | "Théorique";
+}
+
+const handleAddExam = async (exam: ExamData) => {
   try {
     const examRef = doc(db, "exams", exam.id);
     await setDoc(examRef, exam);
@@ -39,7 +55,6 @@ export default function AdminDashboard() {
     type: "Théorique" as "Clinique" | "Théorique",
   });
   const router = useRouter();
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) router.push("/login");
@@ -47,13 +62,15 @@ export default function AdminDashboard() {
     });
 
     return () => unsubscribe();
-  }, []);
-
-  const handleChange = (e: any) => {
+  }, [router]);
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     setExam({ ...exam, [e.target.name]: e.target.value });
   };
-
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Validate that we have answers for all questions
     const numQuestions = Number(exam.numQuestions);

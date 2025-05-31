@@ -1,8 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
-import exams from "../public/data/exams.json";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -20,14 +19,7 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-async function migrateData() {
-  for (const exam of exams) {
-    await addDoc(collection(db, "exams"), exam);
-    console.log(`Added exam for module ${exam.subject}`);
-  }
-}
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 migrateData();

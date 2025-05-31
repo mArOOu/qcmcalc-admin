@@ -8,13 +8,6 @@ interface ExamAnswer {
   [key: string]: string[] | string[][] | undefined;
 }
 
-interface ExamData {
-  id: string;
-  name: string;
-  correctAnswers: ExamAnswer;
-  [key: string]: unknown;
-}
-
 function flattenCorrectAnswers(correctAnswers: ExamAnswer): ExamAnswer {
   const flatAnswers: ExamAnswer = {};
   for (const key in correctAnswers) {

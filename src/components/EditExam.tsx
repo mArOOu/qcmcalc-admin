@@ -146,9 +146,36 @@ export default function EditExam() {
         return;
       }
 
-      // Convert ExamData to a plain object for Firestore
-      const { id: _, ...examDataForUpdate } = examData;
-      await updateDoc(examRef, examDataForUpdate);
+      // Extract everything except id for update
+      const {
+        name,
+        description,
+        subject,
+        speciality,
+        grade,
+        year,
+        session,
+        rotation,
+        type,
+        numQuestions,
+        testType,
+        correctAnswers,
+      } = examData;
+
+      await updateDoc(examRef, {
+        name,
+        description,
+        subject,
+        speciality,
+        grade,
+        year,
+        session,
+        rotation,
+        type,
+        numQuestions,
+        testType,
+        correctAnswers,
+      });
       alert("✅ Exam updated successfully!");
     } catch (error) {
       console.error("Error updating exam:", error);

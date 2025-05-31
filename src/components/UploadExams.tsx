@@ -1,6 +1,6 @@
 "use client";
 
-import { db } from "../lib/firebase";
+import { db } from "@/lib/firebase-client";
 import { setDoc, doc } from "firebase/firestore";
 import exams from "../../public/data/exams.json";
 
@@ -23,6 +23,11 @@ function flattenCorrectAnswers(correctAnswers: ExamAnswer): ExamAnswer {
 export default function UploadExams() {
   const handleUpload = async () => {
     console.log("Upload started");
+    if (!db) {
+      console.error("Firebase not initialized");
+      alert("Database not available");
+      return;
+    }
     try {
       for (const exam of exams.exams) {
         const fixedExam = {

@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase-client";
 import { useRouter } from "next/navigation";
 import { setDoc, doc } from "firebase/firestore";
-import { db } from "../lib/firebase"; // Adjust path if needed
 import Calculator from "./Calculator";
 import { v4 as uuidv4 } from "uuid";
 import NumberOfQuestions from "./NumberOfQuestions";
@@ -28,6 +27,10 @@ interface ExamData {
 }
 
 const handleAddExam = async (exam: ExamData) => {
+  if (!db) {
+    console.error("Firebase not initialized");
+    return;
+  }
   try {
     const examRef = doc(db, "exams", exam.id);
     await setDoc(examRef, exam);
@@ -56,12 +59,22 @@ export default function AdminDashboard() {
   });
   const router = useRouter();
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) router.push("/login");
-      else setUser(user);
-    });
+    let unsubscribe: (() => void) | undefined;
 
-    return () => unsubscribe();
+    if (auth) {
+      unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (!user) router.push("/login");
+        else setUser(user);
+      });
+    } else {
+      router.push("/login");
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [router]);
   const handleChange = (
     e: React.ChangeEvent<

@@ -8,7 +8,7 @@ import {
   getDoc,
   updateDoc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase-client";
 import Calculator from "./Calculator";
 import NumberOfQuestions from "./NumberOfQuestions";
 import TypeOfCorrection from "./TypeOfCorrection";
@@ -30,6 +30,10 @@ interface ExamData {
 }
 
 const getAllExamIDs = async () => {
+  if (!db) {
+    console.error("Firebase not initialized");
+    return [];
+  }
   const snapshot = await getDocs(collection(db, "exams"));
   return snapshot.docs.map((doc) => ({
     id: doc.id,
@@ -60,6 +64,10 @@ export default function EditExam() {
   }, []); // Only run once on mount
 
   const handleExamSelect = async (examId: string) => {
+    if (!db) {
+      console.error("Firebase not initialized");
+      return;
+    }
     setSelectedExam(examId);
     if (!examId) {
       setExamData(null);
@@ -117,7 +125,7 @@ export default function EditExam() {
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedExam || !examData) return;
+    if (!selectedExam || !examData || !db) return;
 
     try {
       setIsSaving(true);

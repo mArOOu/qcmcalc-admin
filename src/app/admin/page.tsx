@@ -4,23 +4,44 @@ import { useState, useEffect } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
 import EditExam from "@/components/EditExam";
 import { useRouter } from "next/navigation";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase-client";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"add" | "edit">("add");
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        // Redirect to login if not authenticated
-        router.push("/login");
-      }
-    });
+    setIsLoading(true);
+    let unsubscribe: () => void;
 
-    return () => unsubscribe();
+    if (auth) {
+      unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          // Redirect to login if not authenticated
+          router.push("/login");
+        }
+        setIsLoading(false);
+      });
+    } else {
+      // If auth is not initialized, redirect to login
+      router.push("/login");
+      setIsLoading(false);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [router]); // Add router as dependency
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

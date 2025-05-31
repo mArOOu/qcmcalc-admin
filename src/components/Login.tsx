@@ -1,6 +1,6 @@
 "use client";
 
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase-client";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,8 +9,12 @@ export default function LogIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const handleLogin = async () => {
+    if (!auth) {
+      console.error("Firebase auth not initialized");
+      alert("Authentication service not available");
+      return;
+    }
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin"); // Redirect to dashboard

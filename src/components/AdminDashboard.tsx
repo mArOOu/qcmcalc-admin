@@ -48,7 +48,7 @@ export default function AdminDashboard() {
     description: "",
     speciality: "",
     grade: "",
-    year: "2025",
+    year: "2026",
     subject: "",
     numQuestions: "",
     testType: "QCSs",
@@ -186,7 +186,8 @@ export default function AdminDashboard() {
               onChange={handleChange}
               className="w-full p-3 rounded-md border border-border bg-background text-foreground"
               required>
-              <option value="2025">2025</option>
+              <option value="2025">2024/2025</option>
+              <option value="2026">2025/2026</option>
             </select>
             <select
               name="session"

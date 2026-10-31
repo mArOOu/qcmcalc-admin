@@ -5,10 +5,9 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase-client";
 import { useRouter } from "next/navigation";
 import { setDoc, doc } from "firebase/firestore";
-import Calculator from "./Calculator";
 import { v4 as uuidv4 } from "uuid";
-import NumberOfQuestions from "./NumberOfQuestions";
-import TypeOfCorrection from "./TypeOfCorrection";
+import AdminAnswerGrille from "./AdminAnswerGrille";
+import { CheckCircle2, AlertCircle, PlusCircle, Save, Loader2 } from "lucide-react";
 
 interface ExamData {
   id: string;
@@ -26,89 +25,51 @@ interface ExamData {
   type: "Clinique" | "Théorique";
 }
 
-const handleAddExam = async (exam: ExamData) => {
-  if (!db) {
-    console.error("Firebase not initialized");
-    return;
-  }
-  try {
-    const examRef = doc(db, "exams", exam.id);
-    await setDoc(examRef, exam);
-    alert("✅ Controle Ajouté");
-  } catch (error) {
-    console.error("❌ Erreur", error);
-  }
-};
+const YEARS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020"];
+const QUESTION_PRESETS = [20, 30, 40, 50, 60];
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ onExamAdded }: { onExamAdded?: () => void }) {
   const [user, setUser] = useState<User | null>(null);
-  const [exam, setExam] = useState({
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const [exam, setExam] = useState<ExamData>({
     id: uuidv4(),
     name: "",
     description: "",
-    speciality: "",
-    grade: "",
-    year: "2026",
+    speciality: "Médecine",
+    grade: "1ère année",
+    year: "2025",
     subject: "",
-    numQuestions: "",
-    testType: "QCSs",
-    correctAnswers: {} as Record<number, string[]>,
-    session: "Normal" as "Normal" | "Rattrapage",
-    rotation: "",
-    type: "Théorique" as "Clinique" | "Théorique",
+    numQuestions: "30",
+    testType: "partiallyNegative",
+    correctAnswers: {},
+    session: "Normal",
+    rotation: "1",
+    type: "Théorique",
   });
+
   const router = useRouter();
+
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
-
     if (auth) {
-      unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (!user) router.push("/login");
-        else setUser(user);
+      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        if (!currentUser) router.push("/login");
+        else setUser(currentUser);
       });
     } else {
       router.push("/login");
     }
-
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
   }, [router]);
+
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     setExam({ ...exam, [e.target.name]: e.target.value });
-  };
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // Validate that we have answers for all questions
-    const numQuestions = Number(exam.numQuestions);
-    const hasAllAnswers = Array.from(
-      { length: numQuestions },
-      (_, i) => i + 1
-    ).every((qNum) => exam.correctAnswers[qNum]?.length > 0);
-
-    if (!hasAllAnswers) {
-      alert("Please provide answers for all questions");
-      return;
-    }
-
-    handleAddExam({
-      ...exam,
-      id: exam.id || uuidv4(),
-    });
-  };
-
-  const handleNumQuestionsChange = (value: number) => {
-    setExam((prev) => ({ ...prev, numQuestions: value.toString() }));
-  };
-
-  const handleTestTypeChange = (value: string) => {
-    setExam((prev) => ({ ...prev, testType: value }));
   };
 
   const handleAnswersChange = (answers: Record<number, string[]>) => {
@@ -118,122 +79,347 @@ export default function AdminDashboard() {
     }));
   };
 
-  if (!user) return <p>Loading...</p>;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatusMessage(null);
+
+    if (!exam.name.trim() || !exam.subject.trim()) {
+      setStatusMessage({ type: "error", text: "Veuillez renseigner le nom de l'examen et la matière/module." });
+      return;
+    }
+
+    const answeredCount = Object.keys(exam.correctAnswers).filter(
+      (k) => (exam.correctAnswers[Number(k)] || []).length > 0
+    ).length;
+
+    if (answeredCount === 0) {
+      setStatusMessage({ type: "error", text: "Veuillez définir au moins une réponse dans la clé de correction." });
+      return;
+    }
+
+    if (!db) {
+      setStatusMessage({ type: "error", text: "Erreur de connexion à Firestore." });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const examId = exam.id || uuidv4();
+      const examRef = doc(db, "exams", examId);
+
+      await setDoc(examRef, {
+        ...exam,
+        id: examId,
+      });
+
+      setStatusMessage({
+        type: "success",
+        text: `✅ Examen "${exam.name}" ajouté avec succès à la base de données !`,
+      });
+
+      // Reset for next exam
+      setExam({
+        id: uuidv4(),
+        name: "",
+        description: "",
+        speciality: exam.speciality,
+        grade: exam.grade,
+        year: exam.year,
+        subject: "",
+        numQuestions: exam.numQuestions,
+        testType: exam.testType,
+        correctAnswers: {},
+        session: exam.session,
+        rotation: exam.rotation,
+        type: exam.type,
+      });
+
+      if (onExamAdded) {
+        onExamAdded();
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      setStatusMessage({ type: "error", text: `Erreur lors de l'enregistrement : ${msg}` });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center p-12 text-zinc-400">
+        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+        Vérification des autorisations...
+      </div>
+    );
+  }
+
+  const numQInt = parseInt(exam.numQuestions, 10) || 30;
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <h1 className="text-3xl font-bold mb-8 text-center text-primary">
-        Admin Dashboard
-      </h1>
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6">
-        {/* Basic Information Section */}
-        <div className="bg-card p-6 rounded-lg shadow-lg space-y-4">
-          <h2 className="text-xl font-semibold mb-4">
-            Informations du Controle
+    <div className="w-full max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+        <div>
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-blue-400" />
+            <span>Ajouter une Nouvelle Épreuve / Examen</span>
           </h2>
+          <p className="text-xs text-zinc-400 mt-1">
+            Enregistrez un nouveau sujet dans les annales officielles de Constantine.
+          </p>
+        </div>
+      </div>
 
-          <div className="space-y-4">
-            <input
-              name="name"
-              value={exam.name}
-              onChange={handleChange}
-              placeholder="Nom du Controle"
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required
-            />
+      {/* Status banner */}
+      {statusMessage && (
+        <div
+          className={`p-4 rounded-2xl border text-sm flex items-center gap-3 animate-in fade-in ${
+            statusMessage.type === "success"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+              : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+          }`}>
+          {statusMessage.type === "success" ? (
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 shrink-0" />
+          )}
+          <span>{statusMessage.text}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Step 1: Basic info */}
+        <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 backdrop-blur-md shadow-xl space-y-4">
+          <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-2">
+            1. Informations de l&apos;Épreuve
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Titre du Contrôle / Examen *
+              </label>
+              <input
+                name="name"
+                required
+                value={exam.name}
+                onChange={handleChange}
+                placeholder="Ex: Contrôle de Cardiologie EMD1 2025"
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Matière / Module *
+              </label>
+              <input
+                name="subject"
+                required
+                value={exam.subject}
+                onChange={handleChange}
+                placeholder="Ex: Cardiologie"
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-zinc-300">
+              Description ou Précisions
+            </label>
             <textarea
               name="description"
+              rows={2}
               value={exam.description}
               onChange={handleChange}
-              placeholder="Description"
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground min-h-[100px]"
-              required
+              placeholder="Ex: Épreuve théorique de cardiologie - Faculté de Médecine de Constantine"
+              className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             />
-            <input
-              name="subject"
-              value={exam.subject}
-              onChange={handleChange}
-              placeholder="Module"
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required
-            />
-            <select
-              name="speciality"
-              value={exam.speciality}
-              onChange={handleChange}
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required>
-              <option value="Médecine">Médecine</option>
-              <option value="Pharmacie">Pharmacie</option>
-              <option value="Chirurgie Dentaire">Chirurgie Dentaire</option>
-            </select>
-            <select
-              name="grade"
-              value={exam.grade}
-              onChange={handleChange}
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required>
-              <option value="1ère année">1ère Année</option>
-              <option value="2ème année">2ème Année</option>
-              <option value="3ème année">3ème Année</option>
-              <option value="4ème année">4ème Année</option>
-              <option value="5ème année">5ème Année</option>
-              <option value="6ème année">6ème Année</option>
-            </select>{" "}
-            <select
-              name="year"
-              value={exam.year}
-              onChange={handleChange}
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required>
-              <option value="2025">2024/2025</option>
-              <option value="2026">2025/2026</option>
-            </select>
-            <select
-              name="session"
-              value={exam.session}
-              onChange={handleChange}
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required>
-              <option value="Normal">Session Normale</option>
-              <option value="Rattrapage">Session de Rattrapage</option>
-            </select>
-            <input
-              name="rotation"
-              value={exam.rotation}
-              onChange={handleChange}
-              placeholder="Rotation"
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required
-            />
-            <select
-              name="type"
-              value={exam.type}
-              onChange={handleChange}
-              className="w-full p-3 rounded-md border border-border bg-background text-foreground"
-              required>
-              <option value="Théorique">Théorique</option>
-              <option value="Clinique">Clinique</option>
-            </select>
-            <NumberOfQuestions onChange={handleNumQuestionsChange} />
-            <TypeOfCorrection onChange={handleTestTypeChange} />
           </div>
         </div>
 
-        {/* Answer Input Section */}
-        <div className="bg-card p-6 rounded-lg shadow-lg">
-          <Calculator
-            numQuestions={Number(exam.numQuestions)}
-            testType={exam.testType}
-            onAnswersChange={handleAnswersChange}
-          />
+        {/* Step 2: Academic Classification */}
+        <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 backdrop-blur-md shadow-xl space-y-4">
+          <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-2">
+            2. Classification Académique
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Filière / Spécialité
+              </label>
+              <select
+                name="speciality"
+                value={exam.speciality}
+                onChange={handleChange}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="Médecine">Médecine</option>
+                <option value="Pharmacie">Pharmacie</option>
+                <option value="Chirurgie Dentaire">Chirurgie Dentaire</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Année d&apos;étude
+              </label>
+              <select
+                name="grade"
+                value={exam.grade}
+                onChange={handleChange}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="1ère année">1ère Année</option>
+                <option value="2ème année">2ème Année</option>
+                <option value="3ème année">3ème Année</option>
+                <option value="4ème année">4ème Année</option>
+                <option value="5ème année">5ème Année</option>
+                <option value="6ème année">6ème Année</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Promotion / Année Civile
+              </label>
+              <select
+                name="year"
+                value={exam.year}
+                onChange={handleChange}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                {YEARS.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Session
+              </label>
+              <select
+                name="session"
+                value={exam.session}
+                onChange={handleChange}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="Normal">Session Normale</option>
+                <option value="Rattrapage">Session de Rattrapage</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Type
+              </label>
+              <select
+                name="type"
+                value={exam.type}
+                onChange={handleChange}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="Théorique">Théorique</option>
+                <option value="Clinique">Clinique</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300">
+                Rotation
+              </label>
+              <input
+                name="rotation"
+                value={exam.rotation}
+                onChange={handleChange}
+                placeholder="Ex: 1, 2, ou EMD"
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex justify-center pt-6">
+        {/* Step 3: Exam Parameters */}
+        <div className="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 backdrop-blur-md shadow-xl space-y-4">
+          <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-2">
+            3. Barème & Nombre de Questions
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-zinc-300">
+                Nombre total de questions
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {QUESTION_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setExam({ ...exam, numQuestions: p.toString() })}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                      exam.numQuestions === p.toString()
+                        ? "bg-blue-600 text-white"
+                        : "bg-zinc-800 text-zinc-400 hover:text-white"
+                    }`}>
+                    {p} QCMs
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                min="1"
+                max="200"
+                value={exam.numQuestions}
+                onChange={(e) => setExam({ ...exam, numQuestions: e.target.value })}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
+                placeholder="Nombre personnalisé"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-zinc-300">
+                Mode de correction
+              </label>
+              <select
+                name="testType"
+                value={exam.testType}
+                onChange={handleChange}
+                className="w-full p-2.5 bg-zinc-950 border border-zinc-800 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="partiallyNegative">Partielle (Constantine: toute erreur = 0 pt)</option>
+                <option value="allOrNothing">Tout ou Rien (combinaison exacte requise)</option>
+                <option value="partiallyPositive">Partielle Américaine (points négatifs)</option>
+                <option value="QCSs">QCS (Question à Choix Simple)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Step 4: Correct Answers Key */}
+        <AdminAnswerGrille
+          numQuestions={numQInt}
+          answers={exam.correctAnswers}
+          onChange={handleAnswersChange}
+          label="4. Clé de Correction Officielle"
+        />
+
+        {/* Submit */}
+        <div className="flex justify-end pt-4">
           <button
             type="submit"
-            className="bg-primary text-primary-foreground px-8 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity hover:cursor-pointer">
-            Ajouter Le controle
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-500/25 transition cursor-pointer disabled:opacity-50">
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Enregistrement en cours...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Enregistrer l&apos;examen dans la base</span>
+              </>
+            )}
           </button>
         </div>
       </form>

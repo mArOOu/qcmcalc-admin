@@ -3,28 +3,29 @@
 import { useState, useEffect } from "react";
 import AdminDashboard from "@/components/AdminDashboard";
 import EditExam from "@/components/EditExam";
+import UploadExams from "@/components/UploadExams";
 import { useRouter } from "next/navigation";
 import { auth } from "@/lib/firebase-client";
 import { onAuthStateChanged } from "firebase/auth";
+import { Layers, PlusCircle, UploadCloud, Loader2 } from "lucide-react";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<"add" | "edit">("add");
+  const [activeTab, setActiveTab] = useState<"manage" | "add" | "bulk">("manage");
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
   useEffect(() => {
     setIsLoading(true);
-    let unsubscribe: () => void;
+    let unsubscribe: (() => void) | undefined;
 
     if (auth) {
       unsubscribe = onAuthStateChanged(auth, (user) => {
         if (!user) {
-          // Redirect to login if not authenticated
           router.push("/login");
         }
         setIsLoading(false);
       });
     } else {
-      // If auth is not initialized, redirect to login
       router.push("/login");
       setIsLoading(false);
     }
@@ -34,41 +35,71 @@ export default function AdminPage() {
         unsubscribe();
       }
     };
-  }, [router]); // Add router as dependency
+  }, [router]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center text-zinc-400 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="text-sm">Vérification de la session administrateur...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-center space-x-4 py-6">
-          <button
-            onClick={() => setActiveTab("add")}
-            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-              activeTab === "add"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}>
-            Add Exam
-          </button>
-          <button
-            onClick={() => setActiveTab("edit")}
-            className={`px-6 py-2 rounded-full font-semibold transition-colors ${
-              activeTab === "edit"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}>
-            Edit Exam
-          </button>
+    <div className="min-h-[calc(100vh-80px)] bg-zinc-950 text-white py-8 px-4">
+      <div className="max-w-5xl mx-auto space-y-8">
+        {/* Top Tab Bar */}
+        <div className="flex items-center justify-center">
+          <div className="inline-flex items-center p-1.5 rounded-2xl bg-zinc-900 border border-zinc-800 shadow-lg">
+            <button
+              onClick={() => setActiveTab("manage")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                activeTab === "manage"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                  : "text-zinc-400 hover:text-white"
+              }`}>
+              <Layers className="w-4 h-4" />
+              <span>Gérer les Examens</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("add")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                activeTab === "add"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                  : "text-zinc-400 hover:text-white"
+              }`}>
+              <PlusCircle className="w-4 h-4" />
+              <span>Ajouter un Examen</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("bulk")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition cursor-pointer ${
+                activeTab === "bulk"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                  : "text-zinc-400 hover:text-white"
+              }`}>
+              <UploadCloud className="w-4 h-4" />
+              <span>Import en Masse</span>
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6">
-          {activeTab === "add" ? <AdminDashboard /> : <EditExam />}
+        {/* Tab Content */}
+        <div className="animate-in fade-in duration-200">
+          {activeTab === "manage" && <EditExam />}
+          {activeTab === "add" && <AdminDashboard onExamAdded={() => setActiveTab("manage")} />}
+          {activeTab === "bulk" && (
+            <div className="max-w-2xl mx-auto bg-zinc-900/80 border border-zinc-800 rounded-3xl p-6 backdrop-blur-md shadow-xl text-center space-y-4">
+              <h3 className="text-lg font-bold text-white">Import JSON en Masse vers Firestore</h3>
+              <p className="text-xs text-zinc-400">
+                Synchronisez l&apos;ensemble du catalogue local <code className="text-zinc-200">exams.json</code> vers la collection Firestore <code className="text-zinc-200">exams</code>.
+              </p>
+              <UploadExams />
+            </div>
+          )}
         </div>
       </div>
     </div>
